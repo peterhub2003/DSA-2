@@ -40,6 +40,7 @@ public:
         AVL_Node* rotateRight(AVL_Node* y);
 
         int SizeTree() const;
+        int& getRef() const {return Ref;}
         AVL_Node* getMaximumNode(AVL_Node* n) const;
         int getBalanceFactor(AVL_Node* n) const;
         int getHeight(AVL_Node* n) const;
@@ -50,6 +51,7 @@ public:
     private:
         AVL_Node* root;
         int Size_tree;
+        int& Ref = Size_tree;
     };
 
 private:
@@ -63,7 +65,7 @@ private:
 
 public:
     Node(int lLen, int _Len, char* _data, Node* l, Node* r);
-
+    ParentsTree* getP_root() const {return this->P_root;}
     void Del_N();
     friend class ConcatStringTree;
     friend class LitStringHash;
@@ -106,11 +108,13 @@ public:
     string getParTreeStringPreOrder(const string & query) const;
 };
 
+//==========================================================================================
 class ReducedConcatStringTree; // forward declaration
 
 class HashConfig {
 public:
-
+    HashConfig(){;}
+    HashConfig(int, double, double, double, double, int);
 private:
     int p;
     double c1, c2;
@@ -125,10 +129,12 @@ private:
 class Element{
 private:
     char* key;
-    int connect;
     Node* r;
+    int& connect = r->getP_root()->getRef();;
 public:
-    Element(char* k, int c, Node* _r): key(k), connect(c), r(_r){;}
+    Element(char* k, Node* _r): key(k), r(_r){
+        connect = r->getP_root()->getRef();
+    }
     char* getKey() const { return key;}
     Node* getValue() const { return r;}
 

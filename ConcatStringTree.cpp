@@ -17,8 +17,9 @@ void Node::Del_N()
     this->data = nullptr;
     this->left = nullptr;
     this->right = nullptr;
-    delete this->P_root;
     this->P_root = nullptr;
+
+    delete this;
 }
 //==============================================================================
 //==========================ConcatStringTree====================================
@@ -89,9 +90,9 @@ string ConcatStringTree::getString() const
 string ConcatStringTree::toString() const
 {
     stringstream ss;
-    ss << "ConcatStringTree[";
+    ss << "ConcatStringTree[\"";
     this ->_toString(this->root, ss);
-    ss << "] ";
+    ss << "\"]";
 
     return ss.str();
 }
@@ -101,7 +102,7 @@ void ConcatStringTree::_toStringPreOrder(Node* root, stringstream& ss) const
     if(!root) return;
     if(root->data != nullptr) {
         ss << "(LL=" << root->leftLen
-           << ",L=" << root -> Len << ',' << root->data  << ");";
+           << ",L=" << root -> Len << ",\"" << root->data  << "\");";
         return;
     }
 
@@ -227,6 +228,7 @@ ConcatStringTree ConcatStringTree::subString(int from, int to) const
 void ConcatStringTree::Del_Node(Node* c)
 {
     if(!c) return;
+    if(c->P_root == nullptr) return;
     if(c == this->root) c->P_root->Del(c->id);
     if(c->P_root->SizeTree() == 0) {
         if(c->left  && c->left->P_root->SizeTree()  != 0){c->left ->P_root->Del(c->id);}
@@ -389,7 +391,23 @@ ConcatStringTree::~ConcatStringTree()
     return;
  }
 
-//======================================================
+//==============================HASH CONFIG ======================================
+//==============================HASH CONFIG ======================================
+HashConfig::HashConfig(int _p,
+                       double _c1,
+                       double _c2,
+                       double _lambda,
+                       double _alpha,
+                       int Size)
+{
+    this->p = _p;
+    this->c1 = _c1;
+    this->c2 = _c2;
+    this->lambda = _lambda;
+    this->alpha = _alpha;
+    this->initSize = Size;
+}
+//================================================================================
 LitStringHash::LitStringHash(const HashConfig& hashConfig){
    p = hashConfig.p;
    c1 = hashConfig.c1;
@@ -434,7 +452,6 @@ void LitStringHash::reHashing(){
     for(int i = 0; i < new_size;
         new_table[i] = nullptr, new_stage[i] = State::NIL, ++i);
 
-
     for(int i = 0; i < numsOfBuckets; ++i)
     {
         if(stage[i] == State::NON_EMPTY)
@@ -448,6 +465,7 @@ void LitStringHash::reHashing(){
                 {
                     new_table[idx] = table[i];
                     new_stage[idx] = State::NON_EMPTY;
+                    this->lastIndex = idx;
                     break;
                 }
                 ++j;
@@ -460,13 +478,14 @@ void LitStringHash::reHashing(){
 }
 
 string LitStringHash::toString() const{
+
     stringstream ss;
     ss << "LitStringHash[";
     for(int i = 0; i < numsOfBuckets; ++i)
     {
         if(stage[i] != State::NON_EMPTY) {ss << "();";}
         else {
-            ss << "(litS=" << table[i]->key << ");";
+            ss << "(litS=\"" << table[i]->key << "\");";
         }
     }
     string res = ss.str();
@@ -487,7 +506,7 @@ int LitStringHash::get_idx(const char* s) const
     while(i < this->numsOfBuckets)
     {
         idx = this->Hashing_hp(numsOfBuckets, s, i);
-        if(table[idx] && table[idx]->key == s) return idx;
+        if(table[idx] && table[idx]->key == (string)s) return idx;
         ++i;
     }
     if(i == this->numsOfBuckets) idx = -1;
@@ -508,19 +527,18 @@ void LitStringHash::insert(char *s, Node* c){
     {
         int idx = this->Hashing_hp(numsOfBuckets, s, i);
         if(stage[idx] == State::NIL && indexOfDeleted != -1) {break;}
-        else if(stage[idx] == State::NIL && indexOfDeleted == -1)
+        else if(stage[idx] == State::NIL && indexOfDeleted == -1 || stage[idx] == State::NON_EMPTY && table[idx]->connect == 0)
         {
-            table[idx] = new Element(s, c->P_root->SizeTree(), c);
+            table[idx] = new Element(s, c);
             stage[idx] = State::NON_EMPTY;
             this->lastIndex = idx;
             break;
-        }else{
-
+        }
+        else{
             if(stage[idx] == State::DELETED && indexOfDeleted == -1)
             { indexOfDeleted = idx;}
             else{
                 if(table[idx] && table[idx]->key == (string)s) {
-                    table[idx]->connect = table[idx]->r->P_root->SizeTree();
                     return;
                 }
             }
@@ -532,7 +550,7 @@ void LitStringHash::insert(char *s, Node* c){
 
     if(indexOfDeleted != -1)
     {
-        table[indexOfDeleted] = new Element(s, c->P_root->SizeTree(), c);
+        table[indexOfDeleted] = new Element(s, c);
         stage[indexOfDeleted] = State::NON_EMPTY;
         this->lastIndex = indexOfDeleted;
     }
@@ -546,13 +564,13 @@ void LitStringHash::insert(char *s, Node* c){
 }
 
 void LitStringHash::remove(char *s){
+    if(!this->table) this->Init();
     int i = 0;
     while(i < numsOfBuckets)
     {
         int idx = this->Hashing_hp(numsOfBuckets,s, i);
         if(stage[idx] == State::NIL) {break;}
         if(table[idx] && table[idx]->key == (string)s){
-            table[idx]->connect -= 1;
             if(table[idx]->connect == 0){
                 delete table[idx];
                 stage[idx] = State::DELETED;
@@ -628,3 +646,4 @@ ReducedConcatStringTree ReducedConcatStringTree::concat(const ReducedConcatStrin
 }
 
 //==================================================
+
